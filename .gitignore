@@ -1,0 +1,18 @@
+# data + model artifacts (never commit — multi-GB)
+data/
+experiments/
+results/
+*.ckpt
+*.onnx
+*.rec
+*.idx
+*.bin
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# logs
+*.log
