@@ -135,3 +135,51 @@ def test_get_embedding_handles_non_tuple_output() -> None:
     model.return_value = torch.tensor([[1.0, 0.0, 0.0]])
     out = get_embedding(model, torch.zeros(1, 3, 112, 112), torch.device("cpu"))
     assert np.linalg.norm(out) == pytest.approx(1.0)
+
+
+# ---------- BUPT label parsing + reweighting ----------
+
+def test_parse_lst_basic(tmp_path: Path) -> None:
+    """parse_lst reads (path, id_label, race_label) and preserves order."""
+    from bupt_labels import num_classes_from_entries, parse_lst, race_array
+
+    lst = tmp_path / "train_balancedface.lst"
+    lst.write_text(
+        "m.0a/000001_01@x.jpg\t0\t2\n"
+        "m.0a/000002_01@x.jpg\t0\t2\n"
+        "m.0b/000003_01@x.jpg\t1\t3\n"
+    )
+    entries = parse_lst(lst)
+    assert len(entries) == 3
+    assert entries[0] == ("m.0a/000001_01@x.jpg", 0, 2)
+    assert num_classes_from_entries(entries) == 2
+    assert list(race_array(entries)) == [2, 2, 3]
+
+
+def test_inverse_frequency_weights_upweights_rare() -> None:
+    """Rare groups get larger per-sample weight; weights average to ~1."""
+    from bupt_labels import inverse_frequency_weights
+
+    groups = np.array([0, 0, 0, 0, 1])  # group 1 is rare
+    w = inverse_frequency_weights(groups)
+    assert w[-1] > w[0]
+    assert w.mean() == pytest.approx(1.0)
+
+
+def test_ita_bin_weights_handles_nan() -> None:
+    """NaN ITA values get weight 1.0; finite values are bin-rebalanced."""
+    from bupt_labels import ita_bin_weights
+
+    vals = np.array([10.0, 12.0, 40.0, 41.0, 42.0, np.nan])
+    w = ita_bin_weights(vals, n_bins=2)
+    assert w[-1] == pytest.approx(1.0)
+    assert np.all(w[:-1] > 0)
+    # the sparse low-ITA side should be up-weighted relative to the dense side
+    assert w[0] >= w[2]
+
+
+def test_bupt_race_label_mapping() -> None:
+    """Guard the BUPT race index convention against accidental edits."""
+    from bupt_labels import BUPT_RACE_LABELS
+
+    assert BUPT_RACE_LABELS == {0: "Caucasian", 1: "Indian", 2: "Asian", 3: "African"}

@@ -1,0 +1,17 @@
+# Training environment.
+# IMPORTANT: the mxrec data path imports `mxnet`, which has no wheels for
+# Python 3.12+. Use Python 3.10 on the training droplet. (The imagefolder
+# data path does NOT need mxnet.)
+torch>=2.0
+torchvision>=0.15
+numpy<2.0            # mxnet is incompatible with numpy 2.x
+opencv-python>=4.5
+scikit-learn>=1.0
+tqdm>=4.60
+Pillow>=9.0
+onnx>=1.15           # edge export (export_edge.py)
+onnxruntime>=1.17    # ONNX verification + CPU latency benchmark
+# mxnet is ONLY needed for --data-format mxrec. The minimal pipeline uses
+# --data-format imagefolder, so you can SKIP mxnet (and use Python 3.12+).
+# Uncomment the next line only if you train directly from the .rec file:
+# mxnet==1.9.1       # --data-format mxrec only; Linux + Python<=3.10
