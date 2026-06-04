@@ -33,7 +33,8 @@ if [ -d "$RFW_ROOT/data" ] && [ -d "$RFW_ROOT/txts" ]; then
 elif [ -f "$RAW_DIR/test.tar.gz" ]; then
   echo "==> Extracting RFW test set..."
   mkdir -p "$DATA_DIR/RFW"
-  tar xzf "$RAW_DIR/test.tar.gz" -C "$DATA_DIR/RFW"
+  tar xf --no-same-owner "$RAW_DIR/test.tar.gz" -C "$DATA_DIR/RFW" \
+    || echo "  WARN: tar reported non-fatal errors during RFW extract; continuing"
 else
   echo "  WARN: $RAW_DIR/test.tar.gz not found and $RFW_ROOT not present"
 fi
@@ -66,7 +67,7 @@ elif [ -n "${BUPT_IMAGES_ARCHIVE:-}" ] && [ -f "$BUPT_IMAGES_ARCHIVE" ]; then
   echo "==> Extracting images from $BUPT_IMAGES_ARCHIVE (large — be patient)..."
   # Use auto-detect (tar xf) and tolerate a truncated archive: extract every
   # complete file and continue rather than aborting on the final short read.
-  tar xf "$BUPT_IMAGES_ARCHIVE" -C "$IMG_RAW" \
+  tar xf --no-same-owner "$BUPT_IMAGES_ARCHIVE" -C "$IMG_RAW" \
     || echo "  WARN: tar reported errors (archive likely truncated); continuing with extracted files"
 else
   echo "  WARN: no images archive found. Set BUPT_IMAGES_ARCHIVE=/path/to/archive.tar.gz"
