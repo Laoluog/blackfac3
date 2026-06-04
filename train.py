@@ -109,7 +109,13 @@ def build_imagefolder(root: str, hflip: bool = True):
     """Build a torchvision ImageFolder with the standard [-1,1] normalization."""
     from torchvision import datasets, transforms
 
-    tlist = [transforms.ToTensor(), transforms.Normalize([0.5] * 3, [0.5] * 3)]
+    # Force a uniform 112x112 so batches collate even when a few images decode
+    # at an odd size (e.g. partially-written/truncated JPEGs).
+    tlist = [
+        transforms.Resize((112, 112)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.5] * 3, [0.5] * 3),
+    ]
     if hflip:
         tlist.insert(0, transforms.RandomHorizontalFlip())
     tf = transforms.Compose(tlist)
