@@ -43,7 +43,10 @@ def list_imagefolder_paths(root: str) -> list[str]:
     """
     from torchvision import datasets
 
-    ds = datasets.ImageFolder(root)
+    try:
+        ds = datasets.ImageFolder(root, allow_empty=True)
+    except TypeError:
+        ds = datasets.ImageFolder(root)
     logger.info("ImageFolder: %d images across %d classes", len(ds.samples), len(ds.classes))
     return [p for p, _ in ds.samples]
 
