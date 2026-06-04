@@ -64,7 +64,10 @@ if find "$IMG_RAW" -maxdepth 4 -iname '*.jpg' 2>/dev/null | head -1 | grep -q .;
   echo "==> images already extracted under $IMG_RAW"
 elif [ -n "${BUPT_IMAGES_ARCHIVE:-}" ] && [ -f "$BUPT_IMAGES_ARCHIVE" ]; then
   echo "==> Extracting images from $BUPT_IMAGES_ARCHIVE (large — be patient)..."
-  tar xzf "$BUPT_IMAGES_ARCHIVE" -C "$IMG_RAW"
+  # Use auto-detect (tar xf) and tolerate a truncated archive: extract every
+  # complete file and continue rather than aborting on the final short read.
+  tar xf "$BUPT_IMAGES_ARCHIVE" -C "$IMG_RAW" \
+    || echo "  WARN: tar reported errors (archive likely truncated); continuing with extracted files"
 else
   echo "  WARN: no images archive found. Set BUPT_IMAGES_ARCHIVE=/path/to/archive.tar.gz"
 fi
