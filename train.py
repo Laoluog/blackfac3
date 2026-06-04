@@ -30,10 +30,15 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn.functional as F
+from PIL import ImageFile
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 from tqdm import tqdm
 
 import bupt_labels
+
+# The BUPT archive can be truncated at the extraction boundary, leaving a few
+# partially-written JPEGs. Let PIL load what it can instead of crashing a run.
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 logger = logging.getLogger(__name__)
 
