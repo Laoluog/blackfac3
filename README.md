@@ -145,9 +145,9 @@ amplify, not reduce, disparity** — a real trap for African FR.
 
 ## 8. AI-usage disclosure
 
-This project was built with heavy use of an AI coding assistant (**Anthropic
-Claude**) for: implementing the training/distillation/eval/export code,
-debugging, the multi-hour data transfer and recovery process, and drafting the
+This project was built with use of an AI coding assistant (**Anthropic
+Claude**) for: brainstorming assistance for project, aid in writing the code,
+debugging, and editing the
 README and `paper/main.tex`. **All experiments, design decisions, and the
 integrity of the reported numbers are the author's own; no results were
 fabricated or altered.** The commit history documents the full iteration,
