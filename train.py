@@ -30,10 +30,15 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn.functional as F
+from PIL import ImageFile
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 from tqdm import tqdm
 
 import bupt_labels
+
+# The BUPT archive can be truncated at the extraction boundary, leaving a few
+# partially-written JPEGs. Let PIL load what it can instead of crashing a run.
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 logger = logging.getLogger(__name__)
 
@@ -104,10 +109,23 @@ def build_imagefolder(root: str, hflip: bool = True):
     """Build a torchvision ImageFolder with the standard [-1,1] normalization."""
     from torchvision import datasets, transforms
 
-    tlist = [transforms.ToTensor(), transforms.Normalize([0.5] * 3, [0.5] * 3)]
+    # Force a uniform 112x112 so batches collate even when a few images decode
+    # at an odd size (e.g. partially-written/truncated JPEGs).
+    tlist = [
+        transforms.Resize((112, 112)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.5] * 3, [0.5] * 3),
+    ]
     if hflip:
         tlist.insert(0, transforms.RandomHorizontalFlip())
-    return datasets.ImageFolder(root, transform=transforms.Compose(tlist))
+    tf = transforms.Compose(tlist)
+    # Some identity dirs can be empty (a truncated/quota-limited extraction left
+    # only zero-byte files that were then deleted). torchvision raises on empty
+    # classes unless allow_empty=True (added in torchvision 0.18); tolerate both.
+    try:
+        return datasets.ImageFolder(root, transform=tf, allow_empty=True)
+    except TypeError:
+        return datasets.ImageFolder(root, transform=tf)
 
 
 # --------------------------------------------------------------------------- #

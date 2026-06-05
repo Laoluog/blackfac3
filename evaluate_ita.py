@@ -22,10 +22,6 @@ import logging
 from pathlib import Path
 
 import cv2
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np
 from sklearn.metrics import roc_curve
 from tqdm import tqdm
@@ -235,6 +231,11 @@ def plot_models_by_ita(
     per_model: dict[str, list[dict]], far: float, out_path: Path
 ) -> None:
     """Save a line plot of TAR@FAR vs. mean per-bin ITA, one line per model."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
     fig, ax = plt.subplots(figsize=(7, 5))
     for model, bins in per_model.items():
         xs = [b["mean_ita"] for b in bins]

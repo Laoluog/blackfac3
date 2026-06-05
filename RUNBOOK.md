@@ -15,8 +15,10 @@ CPU latency.
 ## 0. Provision the pod
 - **RunPod** (recommended for reliability) or Vast.ai.
 - GPU: **1× A100 80GB**. Template: a PyTorch/CUDA image (e.g. "RunPod PyTorch").
-- **Persistent volume / network volume: ~80 GB**, mounted at `/workspace`. Put
-  data + code + outputs here so a pod restart doesn't lose anything.
+- **Persistent volume / network volume: ~100 GB**, mounted at `/workspace`. Put
+  data + code + outputs here so a pod restart doesn't lose anything. (The images
+  archive is ~27 GB and extracts to ~27 GB; delete the archive after a successful
+  extract to reclaim space — see step 4.)
 - Note the SSH command from the dashboard.
 
 ## 1. Get the code on the pod
@@ -28,7 +30,10 @@ cd black-face
 
 ## 2. Get the data on the pod
 You need two things in `/workspace/black-face/data/`:
-- the **BUPT-Balancedface images** archive (the one you're downloading now), and
+- the **BUPT-Balancedface images** archive — `Equalizedface.tar.gz` (~27 GB, the
+  one whose contents are `race_per_7000/<Race>/<identity>/*.jpg`). Note this is a
+  *different* file from `Equalizedface (1).tar.gz`, which is the mxnet `.rec` and
+  is **not** used by this pipeline.
 - **`test.tar.gz`** (RFW test set).
 
 Fastest is to download them *directly on the pod* (datacenter bandwidth beats
@@ -53,12 +58,20 @@ python -c "import torch; print('cuda', torch.cuda.is_available())"   # must prin
 ## 4. Prepare data (extract + auto-detect paths)
 ```bash
 bash scripts/prepare_data.sh
-# Reads data/*.tar.gz, writes data/prepared/paths.env with IMAGES_ROOT + RFW_ROOT.
-# If it warns the image root looks wrong, set it explicitly and re-run:
-#   BUPT_IMAGES_ROOT=/workspace/black-face/data/prepared/BUPT-images/<the-id-folder-parent> \
+# Extracts test.tar.gz -> RFW; extracts the images archive -> data/prepared/BUPT-raw
+# (race_per_7000/<Race>/<identity>/...), then FLATTENS it into data/prepared/BUPT-flat
+# as one symlink per identity so ImageFolder sees ~28000 identity classes (not the
+# 4 races). Writes data/prepared/paths.env with IMAGES_ROOT + RFW_ROOT.
+#
+# If auto-detect picks the wrong archive, point it explicitly:
+#   BUPT_IMAGES_ARCHIVE=/workspace/black-face/data/Equalizedface.tar.gz \
 #   bash scripts/prepare_data.sh
 ```
-Confirm it prints `IMAGES_ROOT` with ~28000 identity dirs and a valid `RFW_ROOT`.
+Confirm it prints `IMAGES_ROOT` with **~28000 identity dirs** and a valid `RFW_ROOT`.
+Then reclaim space (optional but recommended on a 100 GB volume):
+```bash
+rm data/Equalizedface.tar.gz        # the archive; extracted copy lives in BUPT-raw
+```
 
 ## 5. Launch the run (backgrounded, survives logout)
 ```bash
