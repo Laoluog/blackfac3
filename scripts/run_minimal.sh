@@ -49,7 +49,7 @@ have() { [ -f "$1" ]; }
 
 # ---- 0. smoke test --------------------------------------------------------
 step "0/6 smoke test (20 steps)"
-python train.py "${TRAIN_COMMON[@]}" --arch "$TEACHER_ARCH" --head adaface \
+python src/train.py "${TRAIN_COMMON[@]}" --arch "$TEACHER_ARCH" --head adaface \
   --reweight none --epochs 1 --max-steps 20 \
   --output-dir "$OUT" --prefix smoke
 echo "smoke OK"
@@ -57,14 +57,14 @@ echo "smoke OK"
 # ---- 1. precompute ITA ----------------------------------------------------
 step "1/6 precompute ITA cache"
 if have "$ITA_CACHE"; then echo "cache exists: $ITA_CACHE"; else
-  python precompute_ita.py --data-root "$IMAGES_ROOT" --out "$ITA_CACHE"
+  python src/precompute_ita.py --data-root "$IMAGES_ROOT" --out "$ITA_CACHE"
 fi
 
 # ---- 2. baseline IR-50 (no reweight) -------------------------------------
 BASE_CKPT="$OUT/bupt_${TEACHER_ARCH}_none_last.ckpt"
 step "2/6 train baseline $TEACHER_ARCH (reweight none)"
 if have "$BASE_CKPT"; then echo "exists: $BASE_CKPT"; else
-  python train.py "${TRAIN_COMMON[@]}" --arch "$TEACHER_ARCH" --head adaface \
+  python src/train.py "${TRAIN_COMMON[@]}" --arch "$TEACHER_ARCH" --head adaface \
     --reweight none --epochs "$EPOCHS" --lr-milestones "$LR_MILESTONES" \
     --output-dir "$OUT" --prefix "bupt_${TEACHER_ARCH}_none"
 fi
@@ -73,7 +73,7 @@ fi
 ITA_CKPT="$OUT/bupt_${TEACHER_ARCH}_ita_last.ckpt"
 step "3/6 train $TEACHER_ARCH + ITA reweight (headline)"
 if have "$ITA_CKPT"; then echo "exists: $ITA_CKPT"; else
-  python train.py "${TRAIN_COMMON[@]}" --arch "$TEACHER_ARCH" --head adaface \
+  python src/train.py "${TRAIN_COMMON[@]}" --arch "$TEACHER_ARCH" --head adaface \
     --reweight ita --ita-json "$ITA_CACHE" --epochs "$EPOCHS" \
     --lr-milestones "$LR_MILESTONES" \
     --output-dir "$OUT" --prefix "bupt_${TEACHER_ARCH}_ita"
@@ -83,7 +83,7 @@ fi
 STU_CKPT="$OUT/distill_${STUDENT_ARCH}_ita_last.ckpt"
 step "4/6 distill $TEACHER_ARCH(ITA) -> $STUDENT_ARCH (ITA-weighted)"
 if have "$STU_CKPT"; then echo "exists: $STU_CKPT"; else
-  python distill.py --data-root "$IMAGES_ROOT" --data-format imagefolder \
+  python src/distill.py --data-root "$IMAGES_ROOT" --data-format imagefolder \
     --adaface-repo "$ADAFACE_REPO" --batch-size "$BATCH" --num-workers "$WORKERS" --amp \
     --teacher-arch "$TEACHER_ARCH" --teacher-ckpt "$ITA_CKPT" --student-arch "$STUDENT_ARCH" \
     --reweight ita --ita-json "$ITA_CACHE" --epochs "$DISTILL_EPOCHS" \
@@ -96,25 +96,25 @@ step "5/6 RFW eval + ITA breakdown + tables"
 eval_one() {  # name  arch  ckpt
   local name=$1 arch=$2 ckpt=$3
   if have "$RESULTS/${name}_rfw_results.json"; then echo "eval exists: $name"; return; fi
-  python evaluate_rfw.py --checkpoint "$ckpt" --adaface-repo "$ADAFACE_REPO" \
+  python src/evaluate_rfw.py --checkpoint "$ckpt" --adaface-repo "$ADAFACE_REPO" \
     --rfw-root "$RFW_ROOT" --arch "$arch" --output-dir "$RESULTS" --model-name "$name"
 }
 eval_one "baseline_${TEACHER_ARCH}" "$TEACHER_ARCH" "$BASE_CKPT"
 eval_one "ita_${TEACHER_ARCH}"      "$TEACHER_ARCH" "$ITA_CKPT"
 eval_one "distill_${STUDENT_ARCH}"  "$STUDENT_ARCH" "$STU_CKPT"
 
-python evaluate_ita.py --rfw-root "$RFW_ROOT" --scores-dir "$RESULTS" \
+python src/evaluate_ita.py --rfw-root "$RFW_ROOT" --scores-dir "$RESULTS" \
   --models "baseline_${TEACHER_ARCH}" "ita_${TEACHER_ARCH}" "distill_${STUDENT_ARCH}" \
   --output-dir "$RESULTS"
 
-python results_table.py --output-dir "$RESULTS" --rfw-results \
+python src/results_table.py --output-dir "$RESULTS" --rfw-results \
   "$RESULTS/baseline_${TEACHER_ARCH}_rfw_results.json" \
   "$RESULTS/ita_${TEACHER_ARCH}_rfw_results.json" \
   "$RESULTS/distill_${STUDENT_ARCH}_rfw_results.json"
 
 # ---- 6. edge export -------------------------------------------------------
 step "6/6 export edge student to ONNX + benchmark"
-python export_edge.py --checkpoint "$STU_CKPT" --adaface-repo "$ADAFACE_REPO" \
+python src/export_edge.py --checkpoint "$STU_CKPT" --adaface-repo "$ADAFACE_REPO" \
   --arch "$STUDENT_ARCH" --out "$RESULTS/edge_${STUDENT_ARCH}.onnx" | tee "$RESULTS/edge_summary.txt"
 
 step "DONE"

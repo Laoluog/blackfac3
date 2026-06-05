@@ -16,3 +16,12 @@ __pycache__/
 
 # logs
 *.log
+
+# build / packaging artifacts
+*.zip
+paper/*.aux
+paper/*.out
+paper/*.synctex.gz
+
+# personal / not for submission
+VIDEO_SCRIPT.md

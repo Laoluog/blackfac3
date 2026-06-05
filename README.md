@@ -58,20 +58,20 @@ BUPT images ──► prepare_data.sh ──► ImageFolder (flattened, 112×112
 
 | Path | What |
 |---|---|
-| `train.py` | AdaFace/ArcFace/CosFace trainer; `--reweight none|race|ita` |
-| `distill.py` | ITA-weighted teacher→student feature distillation |
-| `precompute_ita.py` | parallel ITA cache over the training corpus |
-| `bupt_labels.py` | BUPT label parsing + inverse-frequency / ITA-bin weights |
-| `evaluate_rfw.py` | RFW verification (TAR@FAR, AUC, accuracy) |
-| `evaluate_ita.py` | ITA-stratified TAR + the skin-tone plot |
-| `results_table.py` | Markdown/LaTeX comparison vs. literature |
-| `export_edge.py` | ONNX export + param/size/latency, numerically verified |
+| `src/train.py` | AdaFace/ArcFace/CosFace trainer; `--reweight none|race|ita` |
+| `src/distill.py` | ITA-weighted teacher→student feature distillation |
+| `src/precompute_ita.py` | parallel ITA cache over the training corpus |
+| `src/bupt_labels.py` | BUPT label parsing + inverse-frequency / ITA-bin weights |
+| `src/evaluate_rfw.py` | RFW verification (TAR@FAR, AUC, accuracy) |
+| `src/evaluate_ita.py` | ITA-stratified TAR + the skin-tone plot |
+| `src/results_table.py` | Markdown/LaTeX comparison vs. literature |
+| `src/export_edge.py` | ONNX export + param/size/latency, numerically verified |
 | `scripts/prepare_data.sh` | extract + flatten BUPT images, extract RFW |
 | `scripts/run_minimal.sh` | one-command end-to-end pipeline (the 6 stages) |
 | `tests/` | 18 unit tests (CPU-only, no GPU/data needed) |
 | `paper/main.tex` | full writeup (compiles on Overleaf) |
-| `results_captured.md` | the exact run numbers |
-| `RUNBOOK.md` | cloud (RunPod/A100) provisioning + run guide |
+| `docs/results_captured.md` | the exact run numbers |
+| `docs/RUNBOOK.md` | cloud (RunPod/A100) provisioning + run guide |
 
 ## 4. Setup
 
@@ -82,7 +82,7 @@ git clone https://github.com/mk-minchul/AdaFace   # backbone + head
 export ADAFACE_REPO=$PWD/AdaFace
 ```
 The minimal pipeline uses `--data-format imagefolder` and **does not need mxnet**
-(any Python 3.10–3.12). See [`RUNBOOK.md`](RUNBOOK.md) for the exact A100 steps.
+(any Python 3.10–3.12). See [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for the exact A100 steps.
 
 ## 5. Usage
 
@@ -98,7 +98,7 @@ tail -f run.log
 # outputs land in ./results : results_table.md/.tex, ita_vs_tar.png,
 # *_rfw_results.json, ita_binned_results.json, edge_ir_18.onnx
 ```
-Run individual stages directly via `train.py`, `distill.py`, `evaluate_rfw.py`,
+Run individual stages directly via `src/train.py`, `src/distill.py`, `src/evaluate_rfw.py`,
 etc. — each has `--help`.
 
 ```bash
@@ -122,8 +122,8 @@ from a **truncated** archive; 12 epochs; A100), evaluated on RFW (4×6,000 pairs
 | distill IR-18 | 0.281 | 0.516 | 0.784 | 0.656 | 0.504 |
 
 ITA reweighting was **lower in every skin-tone bin**, including the darkest
-(0.351 → 0.302). See [`results_captured.md`](results_captured.md) and
-[`results_ita_vs_tar.png`](results_ita_vs_tar.png).
+(0.351 → 0.302). See [`docs/results_captured.md`](docs/results_captured.md) and
+[`docs/results_ita_vs_tar.png`](docs/results_ita_vs_tar.png).
 
 **Why (failure analysis):** the truncated download removed ~half of African
 identities; up-weighting dark-skin images then concentrates training on a small,

@@ -2,6 +2,7 @@
 # Train AdaFace on BUPT-Balancedface (mxrec). Edit the paths/vars then run.
 # Usage: bash scripts/run_train.sh
 set -euo pipefail
+cd "$(dirname "$0")/.."
 
 ADAFACE_REPO=${ADAFACE_REPO:-/models/AdaFace}
 DATA_ROOT=${DATA_ROOT:-/data/BUPT-Balancedface/rec_for_mxnet}   # must hold train.rec + train.idx
@@ -15,7 +16,7 @@ BATCH=${BATCH:-256}
 MAXSTEPS=${MAXSTEPS:-0}         # >0 = smoke test (stop each epoch after N batches)
 PREFIX=${PREFIX:-bupt_${HEAD}_${ARCH}_${REWEIGHT}}
 
-python train.py \
+python src/train.py \
   --data-root "$DATA_ROOT" \
   --data-format mxrec \
   --lst "$LST" \
